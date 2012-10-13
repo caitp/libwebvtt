@@ -36,6 +36,7 @@ webvtt_status_t
 	WEBVTT_INVALID_PARAM = -4,
 	WEBVTT_NOT_SUPPORTED = -5,
 	WEBVTT_NEED_MORE_DATA = -6,
+	WEBVTT_END_OF_STREAM = -7,
 } webvtt_status;
 
 webvtt_status webvtt_parser_new( webvtt_flags flags, webvtt_reader preader, webvtt_parser *pparser );
@@ -56,6 +57,6 @@ webvtt_cue_t
 	webvtt_timestamp_t until;
 	webvtt_string id;
 	webvtt_string payload;
-};
+} webvtt_cue_t;
 
 #endif

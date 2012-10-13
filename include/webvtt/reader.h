@@ -5,7 +5,7 @@
 #		include <stdio.h>
 #	endif
 
-typedef struct webvtt_reader_t *webvtt_reader;
+typedef struct webvtt_reader_t *webvtt_reader, webvtt_reader_t;
 
 /**
  * webvtt_reader_t

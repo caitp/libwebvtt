@@ -1,11 +1,11 @@
 #include <webvtt/parser.h>
-
+#include <malloc.h>
 
 #ifdef WEBVTT_MIN_BUFFER_SIZE
 #	undef WEBVTT_MIN_BUFFER_SIZE
 #endif
 #define WEBVTT_MIN_BUFFER_SIZE 0x80
-#ifndef WEBVTT_BUFFER_SIZE || WEBVTT_BUFFER_SIZE < WEBVTT_MIN_BUFFER_SIZE
+#if !defined(WEBVTT_BUFFER_SIZE) || WEBVTT_BUFFER_SIZE < WEBVTT_MIN_BUFFER_SIZE
 #	define WEBVTT_BUFFER_SIZE (0x200)
 #endif
 
@@ -39,7 +39,8 @@ webvtt_parser_t
 	webvtt_byte buffer[WEBVTT_BUFFER_SIZE];
 	webvtt_uint32 position;
 	webvtt_uint32 filled; /* bytes in the buffer that have been filled. */
-	
+	webvtt_uint32 signal;
+
 	/**
 	 * working cue
 	 */
@@ -50,9 +51,9 @@ webvtt_parser_t
 	 * reset to NULL after retrieved.
 	 */
 	webvtt_cue finished_cue;
-};
+} webvtt_parser_t;
 
-static webvtt_status webvtt_parse_heaader( webvtt_reader self );
+static webvtt_status webvtt_parse_header( webvtt_parser self );
 
 webvtt_status
 webvtt_parser_new( webvtt_flags flags, webvtt_reader preader, webvtt_parser *pparser )
@@ -64,7 +65,7 @@ webvtt_parser_new( webvtt_flags flags, webvtt_reader preader, webvtt_parser *ppa
 		return WEBVTT_INVALID_PARAM;
 	}
 	
-	me = calloc( sizeof *me );
+	me = calloc( 1, sizeof *me );
 	if( !me )
 	{
 		return WEBVTT_OUT_OF_MEMORY;
@@ -139,7 +140,7 @@ webvtt_parser_get_cue( webvtt_parser self, webvtt_cue *pcue )
 		{
 			if( self->position >= self->filled )
 			{
-				if( ( self->flags & WEBVTT_WAIT_SIGNAL && !self->signal )
+				if( ( self->flags & WEBVTT_WAIT_SIGNAL ) && !self->signal )
 				{
 					s = WEBVTT_NEED_MORE_DATA;
 					break;
@@ -150,8 +151,13 @@ webvtt_parser_get_cue( webvtt_parser self, webvtt_cue *pcue )
 					{
 						--self->signal;
 					}
-					position = 0;
-					filled = self->reader->read( self->reader, self->buffer, sizeof(self->buffer) );
+					self->position = 0;
+					self->filled = self->reader->read( self->reader, self->buffer, 
+						sizeof(self->buffer) );
+					if( self->filled == 0 && self->reader->is_end( self->reader ) )
+					{
+						return WEBVTT_END_OF_STREAM;
+					}
 				}
 			}
 			
@@ -185,8 +191,8 @@ webvtt_parser_get_error( webvtt_parser parser )
  * Parsing implementation
  */
  static webvtt_status
- webvtt_parse_heaader( webvtt_reader self )
+ webvtt_parse_header( webvtt_parser self )
  {
 	
-	
+	return WEBVTT_PARSE_ERROR;
  }

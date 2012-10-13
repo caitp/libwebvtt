@@ -35,10 +35,12 @@ webvtt_status_t
 	WEBVTT_READ_ERROR = -3,
 	WEBVTT_INVALID_PARAM = -4,
 	WEBVTT_NOT_SUPPORTED = -5,
+	WEBVTT_NEED_MORE_DATA = -6,
 } webvtt_status;
 
 webvtt_status webvtt_parser_new( webvtt_flags flags, webvtt_reader preader, webvtt_parser *pparser );
-void webvtt_parser_delete( webvtt_parser *pparser );
+void webvtt_parser_ref( webvtt_parser pparser );
+void webvtt_parser_release( webvtt_parser *pparser );
 webvtt_status webvtt_parser_get_cue( webvtt_parser self, webvtt_cue *pcue );
 void webvtt_parser_get_error( webvtt_parser parser );
 

@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <malloc.h>
 
-static void WEBVTT_CALLBACK file_close( webvtt_reader *pself );
+static void WEBVTT_CALLBACK file_release( webvtt_reader *pself );
+static void WEBVTT_CALLBACK file_close( webvtt_reader self );
 static webvtt_uint32 WEBVTT_CALLBACK file_read( webvtt_reader self, webvtt_byte *buffer, webvtt_uint32 length );
 static webvtt_bool WEBVTT_CALLBACK file_is_end( webvtt_reader self );
 static struct webvtt_reader_t webvtt_reader_file =
 {
+	&file_release,
 	&file_close,
 	&file_read,
 	&file_is_end
@@ -59,17 +61,34 @@ webvtt_status webvtt_filereader_wopen( webvtt_reader *ppreader, const wchar_t *p
 }
 
 static void WEBVTT_CALLBACK
-file_close( webvtt_reader *pself )
+file_release( webvtt_reader *pself )
 {
 	if( pself && *pself )
 	{
-	  webvtt_filereader me = *(webvtt_filereader*)pself;
+		webvtt_filereader me = *(webvtt_filereader*)pself;
+		*pself = 0;
+		
+		/**
+		 * ensure closed before destroying
+		 */
+		me->base.close( &me.base );
+	
+		free( me );
+	}
+}
+
+static void WEBVTT_CALLBACK
+file_close( webvtt_reader self )
+{
+	if( self )
+	{
+	  webvtt_filereader me = (webvtt_filereader)self;
 	  if( me->fh )
 	  {
-		fclose( me->fh );
+		FILE *fh = me->fh;
+		me->fh = 0;
+		fclose( fh );
 	  }
-	  free( me );
-	  *pself = 0;
 	}
 }
 

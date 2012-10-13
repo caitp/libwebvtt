@@ -18,7 +18,7 @@ webvtt_reader_t
 	 * close(self)
 	 * closes a stream, releasing all associated data.
 	 */
-	void (WEBVTT_CALLBACK *close)( webvtt_reader self );
+	void (WEBVTT_CALLBACK *close)( webvtt_reader *pself );
 	
 	/**
 	 * read(self, buffer, length)
@@ -32,7 +32,7 @@ webvtt_reader_t
 	 * returns non-zero if the end of the stream has been reached,
 	 * otherwise zero.
 	 */
-	 int (WEBVTT_CALLBACK *is_end)( webvtt_reader self );
+	 webvtt_bool (WEBVTT_CALLBACK *is_end)( webvtt_reader self );
 };
 
 #endif

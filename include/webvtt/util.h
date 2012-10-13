@@ -65,4 +65,6 @@ typedef unsigned short webvtt_ushort;
 typedef unsigned long webvtt_ulong;
 typedef unsigned long long webvtt_ulonglong;
 typedef webvtt_uint8 webvtt_byte;
+typedef webvtt_int webvtt_bool;
+
 #endif

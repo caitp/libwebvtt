@@ -1,4 +1,5 @@
-libwebvtt - The library for interpreting and authoring conformant WebVTT content
+#libwebvtt
+The library for interpreting and authoring conformant WebVTT content
 Available from https://github.com/caitp/libwebvtt
 
 Routines available to application:
@@ -24,7 +25,7 @@ void webvtt_set_allocator( webvtt_alloc_fn_ptr, webvtt_free_fn_ptr, void * );
 # Error handling
 const char *webvtt_strerror( webvtt_error );
 
-TODO:
+#TODO:
 - *** IMPORTANT *** Add additional API functions for allocating and cleaning up
   Cue objects
 - Reference counting objects (may be a hassle, but would help to prevent leaking

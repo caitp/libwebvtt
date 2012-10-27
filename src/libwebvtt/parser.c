@@ -201,7 +201,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 							IF_TRANSITION(NEWLINE,T_CUEEOL)
 							ELSE
 								self->mode = M_READ_LINE;
-								self->mode = T_CUEID;
+								self->state = T_CUEID;
 							ENDIF
 						END_STATE
 
@@ -495,8 +495,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						int stat;
 						if( !self->cue )
 						{
-							self->cue = (cue *)webvtt_alloc0( sizeof *(self->cue) );
-							if( !self->cue )
+							if( webvtt_create_cue( &((webvtt_cue)self->cue) ) == WEBVTT_OUT_OF_MEMORY )
 							{
 								ERROR(WEBVTT_ALLOCATION_FAILED);
 							}

@@ -79,4 +79,12 @@ webvtt_cue_t
 	webvtt_string payload;
 };
 
+webvtt_status webvtt_create_cue( webvtt_cue *pcue );
+void webvtt_delete_cue( webvtt_cue *pcue );
+webvtt_cs_align webvtt_create_cue_align( webvtt_cue cue );
+webvtt_cs_vertical webvtt_create_cue_vertical( webvtt_cue cue );
+webvtt_cs_line webvtt_get_create_line( webvtt_cue cue );
+webvtt_cs_size webvtt_get_create_size( webvtt_cue cue );
+webvtt_cs_position webvtt_create_cue_position( webvtt_cue cue );
+
 #endif

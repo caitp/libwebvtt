@@ -31,6 +31,9 @@
     <ClCompile Include="..\..\src\libwebvtt\bytearray.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libwebvtt\cue.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\libwebvtt\parser.h">

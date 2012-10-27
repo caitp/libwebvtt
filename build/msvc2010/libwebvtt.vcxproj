@@ -176,6 +176,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\libwebvtt\alloc.c" />
     <ClCompile Include="..\..\src\libwebvtt\bytearray.c" />
+    <ClCompile Include="..\..\src\libwebvtt\cue.c" />
     <ClCompile Include="..\..\src\libwebvtt\error.c" />
     <ClCompile Include="..\..\src\libwebvtt\lexer.c" />
     <ClCompile Include="..\..\src\libwebvtt\parser.c" />

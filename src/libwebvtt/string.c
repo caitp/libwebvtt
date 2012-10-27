@@ -71,7 +71,7 @@ webvtt_string_new( webvtt_uint32 alloc, webvtt_string *ppstr )
 	{
 		return WEBVTT_INVALID_PARAM;
 	}
-	s = webvtt_alloc( sizeof(struct webvtt_string_t) + (alloc*sizeof(webvtt_wchar)) );
+	s = (webvtt_string)webvtt_alloc( sizeof(struct webvtt_string_t) + (alloc*sizeof(webvtt_wchar)) );
 	if( !s )
 	{
 		return WEBVTT_OUT_OF_MEMORY;
@@ -120,7 +120,14 @@ grow( webvtt_uint need, webvtt_string *ppstr )
 		{
 			n = n / 2;
 		} while( n > grow );
-		n = n * 2;
+		if( n < 1<<6 )
+		{
+			n = 1 << 6;
+		}
+		else
+		{
+			n = n * 2;
+		}
 	}
 	else
 	{
@@ -130,12 +137,12 @@ grow( webvtt_uint need, webvtt_string *ppstr )
 			n = n * 2;
 		} while ( n < grow );
 	}
-	s = webvtt_alloc( n );
+	s = (webvtt_string)webvtt_alloc( n );
 	if( !s )
 	{
 		return WEBVTT_OUT_OF_MEMORY;
 	}
-	s->alloc = (grow - sizeof(*p)) / sizeof(webvtt_wchar);
+	s->alloc = (n - sizeof(*p)) / sizeof(webvtt_wchar);
 	s->length = p->length;
 	s->text = s->array;
 	memcpy( s->text, p->text, sizeof(webvtt_wchar) * p->length );
@@ -152,7 +159,7 @@ grow( webvtt_uint need, webvtt_string *ppstr )
 	do \
 	{ \
 		webvtt_uint need = (webvtt_uint)(nchar); \
-		if( (s->length + need) < s->alloc ) \
+		if( (s->length + need) >= s->alloc ) \
 		{ \
 			if( (result = grow( need, ppstr )) != WEBVTT_SUCCESS ) \
 			{ \
@@ -161,8 +168,6 @@ grow( webvtt_uint need, webvtt_string *ppstr )
 			s = *ppstr; \
 		} \
 	} while(0)
-	
-#define PUTC(ch) s->text[ s->length++ ] = (webvtt_wchar)(ch)
 	
 static const webvtt_byte utf8_seqlen[256] = {
 /*      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F */
@@ -190,6 +195,7 @@ static const webvtt_uint32 utf8_min_uc[] =
 /**
  * Append UTF8 text to string, reallocating as needed.
  */
+#define PUTC(ch) s->text[ s->length++ ] = (webvtt_wchar)(ch)
 webvtt_status
 webvtt_string_append_utf8( webvtt_string *ppstr, 
 							const webvtt_byte *buf, 
@@ -219,7 +225,7 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 	/**
 	 * Ensure that we have at least 'len' characters available.
 	 */
-	GROW( (end - src) );
+	GROW(end - src);
 	while( src < end )
 	{
 		webvtt_byte c = *(src)++;
@@ -229,7 +235,7 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 			{
 				/* ASCII character. */
 				GROW(1);
-				PUTC( c );
+				s->text[ s->length++ ] = (webvtt_wchar)(c);
 			}
 			else
 			{
@@ -250,7 +256,7 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 				 * well something is wrong... let's add a replacement character and reset.
 				 */
 				GROW(1);
-				PUTC(REPLACEMENT_CHAR);
+				s->text[ s->length++ ] = (webvtt_wchar)(REPLACEMENT_CHAR);
 				bytes_left = 0;
 				++nc;
 				continue;
@@ -275,15 +281,15 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 					{
 						/* fits in 16 bits */
 						GROW(1);
-						PUTC(uc);
+						s->text[ s->length++ ] = (webvtt_wchar)(uc);
 					}
 					else
 					{
 						/* write out the surrogates */
 						GROW(2);
 						uc -= HALF_BASE;
-						PUTC( (uc >> HALF_SHIFT) + SURROGATE_HIGH_START );
-						PUTC( (uc & HALF_MASK) + SURROGATE_LOW_START );
+						s->text[ s->length++ ] = (webvtt_wchar)( (uc >> HALF_SHIFT) + SURROGATE_HIGH_START );
+						s->text[ s->length++ ] = (webvtt_wchar)( (uc & HALF_MASK) + SURROGATE_LOW_START );
 					}
 				}
 			}

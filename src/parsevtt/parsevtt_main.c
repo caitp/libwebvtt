@@ -12,11 +12,12 @@ error( void *userdata, webvtt_uint line, webvtt_uint col, webvtt_error errcode )
 }
 
 static void WEBVTT_CALLBACK 
-cue( void *userdata, webvtt_cue pcue )
+cue( void *userdata, webvtt_cue cue )
 {
 	/**
 	 * Do nothing
 	 */
+	webvtt_delete_cue( &cue );
 }
 
 int
@@ -75,7 +76,7 @@ main( int argc, char **argv )
 		return 1;
 	}
 	
-	if( ( result = webvtt_create_parser( &cue, &error, 0, &vtt ) ) != WEBVTT_SUCCESS )
+	if( ( result = webvtt_create_parser( &cue, &error, input_file, &vtt ) ) != WEBVTT_SUCCESS )
 	{
 		fprintf( stderr, "error: failed to create VTT parser.\n" );
 		fclose( fh );
@@ -88,7 +89,7 @@ main( int argc, char **argv )
 	do
 	{
 		char buffer[0x1000];
-		webvtt_uint n_read = fread( buffer, 1, sizeof(buffer), fh );
+		webvtt_uint n_read = (webvtt_uint)fread( buffer, 1, sizeof(buffer), fh );
 		if( !n_read && feof( fh ) )
 			break; /* Read the file successfully */
 		result = webvtt_parse_chunk( vtt, buffer, n_read );

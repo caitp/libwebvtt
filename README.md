@@ -34,3 +34,4 @@ Available from https://github.com/caitp/libwebvtt
 - Internationalized error messages
 - Shared-library compilation
 - Routines for generating conformant WebVTT text
+- Language bindings (Rust, C++, D, etc)

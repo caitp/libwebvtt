@@ -8,7 +8,7 @@ static int WEBVTT_CALLBACK
 error( void *userdata, webvtt_uint line, webvtt_uint col, webvtt_error errcode )
 {
 	fprintf(stderr, "`%s' at %u:%u -- error: %s\n", (const char *)userdata, line, col, webvtt_strerror( errcode ) );
-	return 0; /* Die on all errors */
+	return -1; /* Die on all errors */
 }
 
 static void WEBVTT_CALLBACK 
@@ -101,11 +101,11 @@ main( int argc, char **argv )
 			 * Acquire some detailed information from the parser (Line number in input file,
 			 * column number, specific error
 			 */
-			fprintf( stderr, "error: parse error\n" );
 			return 1;
 		}
 	} while( result == WEBVTT_SUCCESS );
+	webvtt_finish_parsing( vtt );
 	webvtt_delete_parser( vtt );
 	fclose( fh );
-	return status;
+	return 0;
 }

@@ -18,7 +18,7 @@ static const char *errstr[] =
 	/* WEBVTT_LINE_ALREADY_SET */ "'line' cue-setting already used",
 	/* WEBVTT_LINE_BAD_VALUE */ "'line' cue-setting must have a value that is an integer (signed) line number, or percentage (%) from top of video display",
 	/* WEBVTT_POSITION_ALREADY_SET */ "'position' cue-setting already used",
-	/* WEBVTT_POSITION_BAD_VALUE */ "'position' cue-setting must have a positive integer value"
+	/* WEBVTT_POSITION_BAD_VALUE */ "'position' cue-setting must be a percentage (%) value representing the position in the direction orthogonal to the 'line' setting",
 	/* WEBVTT_SIZE_ALREADY_SET */ "'size' cue-setting already used",
 	/* WEBVTT_SIZE_BAD_VALUE */ "'size' cue-setting must have percentage (%) value",
 	/* WEBVTT_ALIGN_ALREADY_SET */ "'align' cue-setting already used",

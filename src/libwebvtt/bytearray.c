@@ -126,3 +126,20 @@ webvtt_bytearray_getline( webvtt_bytearray *pba, const webvtt_byte *buffer,
 	}
 	return ret;
 }
+
+webvtt_status
+webvtt_bytearray_putc( webvtt_bytearray *ppstr, webvtt_byte ch )
+{
+	webvtt_bytearray ba = *ppstr;
+	if( ba->length + 1 >= ba->alloc )
+	{
+		if( grow( ppstr, 1 ) == WEBVTT_OUT_OF_MEMORY )
+		{
+			return WEBVTT_OUT_OF_MEMORY;
+		}
+		ba = *ppstr;
+	}
+	ba->text[ ba->length++ ] = ch;
+	ba->text[ ba->length ] = 0;
+	return WEBVTT_SUCCESS;
+}

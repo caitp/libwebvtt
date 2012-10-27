@@ -18,7 +18,7 @@ enum
  */
 enum parse_state_t
 {
-	T_INITIAL = 0, T_HEADER, T_CUES, T_TAG, T_TAGCOMMENT, T_TAGEOL, T_TAGEOL2, T_STARTTIME, T_PAYLOAD,
+	T_INITIAL = 0, T_HEADER, T_CUES, T_TAG, T_TAGCOMMENT, T_TAGEOL, T_PAYLOADEOL, T_STARTTIME, T_PAYLOAD,
 	T_CUEEOL, T_SEP1, T_SEP2, T_SEP3, T_PRESETTING, T_ENDTIME, T_CUEID, T_SETTING, T_VERTICAL, T_POSITION,
 	T_LINE, T_SIZE, T_ALIGN, T_PREPAYLOAD
 };
@@ -65,9 +65,54 @@ webvtt_create_parser( webvtt_cue_fn_ptr on_read,
 	return WEBVTT_SUCCESS;
 }
 
+webvtt_status
+webvtt_finish_parsing( webvtt_parser self )
+{
+	if( !self )
+	{
+		return WEBVTT_INVALID_PARAM;
+	}
+	/**
+	 * If we have a cue in the works and are in state T_PAYLOAD or T_PAYLOADEOL,
+	 * we should assume that we're finished with the cue and provide it to the application
+	 */
+	if( self->cue )
+	{
+		switch( self->state )
+		{
+			case T_PAYLOAD:
+			case T_PAYLOADEOL:
+			case T_CUEEOL:
+			if( self->line_buffer )
+			{
+				webvtt_uint pos = 0;
+				webvtt_string_new( self->line_buffer->length, &self->cue->payload );
+				if( webvtt_string_append_utf8( &self->cue->payload, self->line_buffer->text, &pos, 
+					self->line_buffer->length, 0 ) == WEBVTT_OUT_OF_MEMORY )
+				{
+					ERROR(WEBVTT_ALLOCATION_FAILED);
+				}
+				webvtt_bytearray_delete(&self->line_buffer);
+			}
+			self->read( self->userdata, (webvtt_cue)self->cue );
+			self->cue = 0;
+			break;
+		}
+	}
+	return WEBVTT_SUCCESS;
+}
+
 void
 webvtt_delete_parser( webvtt_parser self )
 {
+	if( self )
+	{
+		if( self->line_buffer )
+		{
+			webvtt_bytearray_delete( &self->line_buffer );
+		}
+		webvtt_free( self );
+	}
 }
 
 #define BEGIN_STATE(State) case State: {
@@ -128,12 +173,17 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 			case M_BUFFER_TOKENS:
 			{
 				token = webvtt_lex( self, (webvtt_byte *)buffer, &pos, len );
-				if( self->state == T_CUEEOL && (token == UNFINISHED || token == BADTOKEN ) )
+				if(token == UNFINISHED || token == BADTOKEN )
 				{
-					pos -= self->token_pos;
-					self->mode = M_READ_LINE;
-					self->state = T_CUEID;
-					continue;
+					switch( self->state )
+					{
+					case T_CUEEOL:
+					case T_PAYLOADEOL:
+						self->state = self->state == T_CUEEOL ? T_CUEID : T_PAYLOAD;
+						pos -= self->token_pos;
+						self->mode = M_READ_LINE;
+						continue;
+					}
 				}
 				if( token == UNFINISHED )
 				{
@@ -158,20 +208,10 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						END_STATE
 
 						BEGIN_STATE(T_TAGEOL)
-							IF_TRANSITION(NEWLINE,T_TAGEOL2)
+							IF_TRANSITION(NEWLINE,T_CUEEOL)
 							ELSE
 								ERROR(WEBVTT_EXPECTED_EOL);
 								pos -= (self->token_pos-1);
-								continue;
-							ENDIF
-						END_STATE
-
-						BEGIN_STATE(T_TAGEOL2)
-							IF_TRANSITION(NEWLINE,T_TAGEOL2)
-							ELSE
-								self->state = T_CUEID;
-								self->mode = M_READ_LINE;
-								pos -= (self->token_pos);
 								continue;
 							ENDIF
 						END_STATE
@@ -197,9 +237,25 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 							ENDIF
 						END_STATE
 
-						BEGIN_STATE(T_PAYLOAD)
+						BEGIN_STATE(T_PAYLOADEOL)
 							IF_TRANSITION(NEWLINE,T_CUEEOL)
+							{
+								/* We've had multiple EOLs, so we're done with this cue. Ship it to the application */
+								webvtt_finish_parsing( self );
+							}
 							ELSE
+								/* We didn't get a newline, so backup and switch to M_READ_LINE so we can add it to the line buffer */
+								self->state = T_PAYLOAD;
+								pos -= self->token_pos;
+								self->mode = M_READ_LINE;
+							ENDIF
+						END_STATE
+						BEGIN_STATE(T_PAYLOAD)
+							IF_TRANSITION(NEWLINE,T_PAYLOADEOL)
+							ELSE
+								/**
+								 * ... well what else could it be?
+								 */
 								ERROR(WEBVTT_EXPECTED_EOL);
 							ENDIF
 						END_STATE
@@ -353,7 +409,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						END_STATE
 
 						BEGIN_STATE(T_POSITION)
-							if( token == INTEGER )
+							if( token == PERCENTAGE )
 							{
 								const webvtt_byte *b = self->token;
 								webvtt_int64 value;
@@ -555,7 +611,12 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						}
 					END_STATE
 					/**
-					 * Save the payload
+					 * Save the payload:
+					 *
+					 * 10/25/2012: http://dev.w3.org/html5/webvtt/#webvtt-cue-text
+					 * WebVTT cue text consists of zero or more WebVTT cue components, in any order, each optionally separated from the next by a WebVTT line terminator.
+					 *
+					 * We need to read line into our byte array, and continue doing so for as long as there is not 2 or more newline character sequences.
 					 */
 					BEGIN_STATE(T_PAYLOAD)
 						int stat;
@@ -568,7 +629,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 							self->truncate = 0;
 						}
 						if( (stat = webvtt_bytearray_getline( &self->line_buffer, (const webvtt_byte*)buffer,
-							&pos, len, self->state == T_CUEID ? &self->truncate : 0 )) < 0 )
+							&pos, len, 0 )) < 0 )
 						{
 							/**
 							 * Allocation failed, so...
@@ -577,21 +638,11 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						}
 						if( stat )
 						{
-							webvtt_uint pos = 0;
-							webvtt_string_new( self->line_buffer->length, &self->cue->payload );
-							if( webvtt_string_append_utf8( &self->cue->payload, self->line_buffer->text, &pos, 
-								self->line_buffer->length, 0 ) == WEBVTT_OUT_OF_MEMORY )
+							if( webvtt_bytearray_putc(&self->line_buffer, 0x0A) == WEBVTT_OUT_OF_MEMORY )
 							{
 								ERROR(WEBVTT_ALLOCATION_FAILED);
 							}
-							webvtt_bytearray_delete(&self->line_buffer);
-
-							/**
-							 * Inform the user that we've read a cue
-							 */
-							self->read( self->userdata, (webvtt_cue)self->cue );
-							self->cue = 0;
-
+							
 							self->mode = M_BUFFER_TOKENS;
 							self->line_pos = 0;
 						}

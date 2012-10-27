@@ -319,12 +319,12 @@ webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_ui
 			END_STATE
 			BEGIN_STATE(T_START1)
 				BEGIN_BYTE
-					STATE_IF('a',T_SIZE2);
+					STATE_IF('a',T_START2);
 				END_BYTE
 			END_STATE
 			BEGIN_STATE(T_START2)
 				BEGIN_BYTE
-					STATE_IF('r',T_SIZE3);
+					STATE_IF('r',T_START3);
 				END_BYTE
 			END_STATE
 			BEGIN_STATE(T_START3)

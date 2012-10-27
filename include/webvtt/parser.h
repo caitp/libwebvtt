@@ -1,62 +1,23 @@
 #ifndef __WEBVTT_CPARSER_H__
 #	define __WEBVTT_CPARSER_H__
 #	include "string.h"
-#	include "reader.h"
+#	include "cue.h"
+#	include "error.h"
 
 typedef struct webvtt_parser_t *webvtt_parser;
-typedef struct webvtt_cue_t *webvtt_cue;
-typedef webvtt_uint64 webvtt_timestamp_t;
+typedef struct webvtt_struct_params_t webvtt_struct_params;
 
-typedef enum
-webvtt_flags_t
-{
-	/**
-	 * WEBVTT_NOWAIT
-	 * will not wait for any signal before continuing to attempt
-	 * to read from the webvtt_reader. The default mode. For normal files,
-	 * this will not cause any problems. However, when reading from a socket or STDIN
-	 * or similar, this could be problematic.
-	 */
-	WEBVTT_NOWAIT = 0,
+/**
+ * Allows application to request error reporting
+ */
+typedef int (WEBVTT_CALLBACK *webvtt_error_fn_ptr)( void *userdata, webvtt_uint line, webvtt_uint col, 
+	webvtt_error error );
+typedef void (WEBVTT_CALLBACK *webvtt_cue_fn_ptr)( void *userdata, webvtt_cue cude );
+
 	
-	/** 
-	 * WEBVTT_WAIT_SIGNAL
-	 * will not try to read from the reader only if signalled
-	 */
-	WEBVTT_WAIT_SIGNAL = 1,
-} webvtt_flags;
-
-typedef enum
-webvtt_status_t
-{
-	WEBVTT_SUCCESS = 0,
-	WEBVTT_OUT_OF_MEMORY = -1,
-	WEBVTT_PARSE_ERROR = -2,
-	WEBVTT_READ_ERROR = -3,
-	WEBVTT_INVALID_PARAM = -4,
-	WEBVTT_NOT_SUPPORTED = -5,
-	WEBVTT_NEED_MORE_DATA = -6,
-	WEBVTT_END_OF_STREAM = -7,
-} webvtt_status;
-
-webvtt_status webvtt_parser_new( webvtt_flags flags, webvtt_reader preader, webvtt_parser *pparser );
-void webvtt_parser_ref( webvtt_parser pparser );
-void webvtt_parser_release( webvtt_parser *pparser );
-webvtt_status webvtt_parser_get_cue( webvtt_parser self, webvtt_cue *pcue );
-void webvtt_parser_get_error( webvtt_parser parser );
-
-webvtt_uint64 webvtt_timestamp_get_hours( webvtt_timestamp_t ms );
-webvtt_uint32 webvtt_timestamp_get_minutes( webvtt_timestamp_t ms );
-webvtt_uint32 webvtt_timestamp_get_seconds( webvtt_timestamp_t ms );
-webvtt_uint32 webvtt_timestamp_get_milliseconds( webvtt_timestamp_t ms );
-
-struct
-webvtt_cue_t
-{
-	webvtt_timestamp_t from;
-	webvtt_timestamp_t until;
-	webvtt_string id;
-	webvtt_string payload;
-} webvtt_cue_t;
+webvtt_status webvtt_create_parser( webvtt_cue_fn_ptr on_read, webvtt_error_fn_ptr on_error, void *
+									userdata, webvtt_parser *ppout );
+void webvtt_delete_parser( webvtt_parser parser );
+webvtt_status webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len );
 
 #endif

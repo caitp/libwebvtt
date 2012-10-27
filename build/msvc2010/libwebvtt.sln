@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwebvtt", "libwebvtt.vcxproj", "{D48DD9B7-35EF-4674-8525-7E85D6B43AA7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "parsevtt", "parsevtt.vcxproj", "{E20C2C44-F1B5-4F4D-B6E3-4BEFE328D1F1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{D48DD9B7-35EF-4674-8525-7E85D6B43AA7} = {D48DD9B7-35EF-4674-8525-7E85D6B43AA7}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D48DD9B7-35EF-4674-8525-7E85D6B43AA7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D48DD9B7-35EF-4674-8525-7E85D6B43AA7}.Debug|Win32.Build.0 = Debug|Win32
+		{D48DD9B7-35EF-4674-8525-7E85D6B43AA7}.Release|Win32.ActiveCfg = Release|Win32
+		{D48DD9B7-35EF-4674-8525-7E85D6B43AA7}.Release|Win32.Build.0 = Release|Win32
+		{E20C2C44-F1B5-4F4D-B6E3-4BEFE328D1F1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E20C2C44-F1B5-4F4D-B6E3-4BEFE328D1F1}.Debug|Win32.Build.0 = Debug|Win32
+		{E20C2C44-F1B5-4F4D-B6E3-4BEFE328D1F1}.Release|Win32.ActiveCfg = Release|Win32
+		{E20C2C44-F1B5-4F4D-B6E3-4BEFE328D1F1}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

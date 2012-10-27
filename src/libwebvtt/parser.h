@@ -1,0 +1,98 @@
+#ifndef __PARSER_H__
+#	define __PARSER_H__
+#	include <webvtt/parser.h>
+#	include "bytearray.h"
+#	include "internal.h"
+
+typedef struct webvtt_parser_t *webvtt_parser;
+typedef struct parse_data_t parse_data;
+typedef enum webvtt_token_t webvtt_token;
+
+#define  CR (0x0D)
+#define  LF (0x0A)
+#define SPC (0x20)
+#define TAB (0x09)
+
+enum
+webvtt_token_t
+{
+	BADTOKEN = -2,
+	UNFINISHED = -1, /* not-token */
+	BOM,
+	WEBVTT, /* 'WEBVTT' */
+	INTEGER, /* /-?\d+/ */
+	NEWLINE, /* /[\r\n]|(\r\n)/ */
+	WHITESPACE, /* /[\t ]/ */
+	FULL_STOP, /* '.' */
+	POSITION, /* 'position:' */
+	ALIGN, /* 'align:' */
+	SIZE, /* 'size:' */
+	LINE, /* 'line:' */
+	VERTICAL, /* 'vertical:' */
+	RL, /* 'rl' */
+	LR, /* 'lr' */
+	START, /* 'start' */
+	MIDDLE, /* 'middle' */
+	END, /* 'end' */
+	SEPARATOR, /* '-->' */
+	TIMESTAMP,
+	PERCENTAGE
+};
+
+
+
+struct
+parse_data_t
+{
+	webvtt_uint state;
+	union
+	{
+		webvtt_int _int;
+		webvtt_uint _uint;
+		webvtt_timestamp timestamp;
+	};
+};
+
+struct
+webvtt_parser_t
+{
+	webvtt_uint state;
+	webvtt_uint bytes; /* number of bytes read. */
+	webvtt_uint line;
+	webvtt_uint column;
+	webvtt_cue_fn_ptr read;
+	webvtt_error_fn_ptr error;
+	void *userdata;
+	webvtt_bool mode;
+
+	/**
+	 * Current cue
+	 */
+	cue *cue;
+
+	/**
+	 * line
+	 */
+	int truncate;
+	webvtt_uint line_pos;
+	webvtt_bytearray line_buffer;
+
+	/**
+	 * tokenizer
+	 */
+	webvtt_uint tstate;
+	webvtt_uint token_pos;
+	webvtt_byte token[0x100];
+};
+
+webvtt_token webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_uint length );
+
+#define ERROR(Code) \
+do \
+{ \
+	if( !self->error || self->error(self->userdata,self->line,self->column,Code) < 0 ) \
+		return WEBVTT_PARSE_ERROR; \
+} while(0)
+
+
+#endif

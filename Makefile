@@ -1,30 +1,41 @@
 SHELL = /bin/bash
 CFLAGS += -I./include -ggdb
 SRCDIR := ./src/
-SOURCES := $(SRCDIR)libwebvtt/webvtt_parser.c $(SRCDIR)libwebvtt/readers/webvtt_filereader.c
+SOURCES := $(shell find $(SRCDIR)libwebvtt/*.c)
 OBJDIR := ./obj/
 OBJECTS := $(patsubst $(SRCDIR)%.c,$(OBJDIR)%.o,$(SOURCES))
 OBJDIRS := $(sort $(dir $(OBJECTS)))
 LIBDIR := ./lib/
 BINDIR := ./bin/
-SOURCES1 := $(SRCDIR)parsevtt/parsevtt_main.c
+SOURCES1 := $(shell find $(SRCDIR)parsevtt/*.c)
 OBJECTS1 := $(patsubst $(SRCDIR)%.c,$(OBJDIR)%.o,$(SOURCES1))
 OBJDIRS1 := $(sort $(dir $(OBJECTS1)))
 TESTS := $(wildcard tests/*.vtt)
+
+LIB := .a
+EXE := .exe
+DLL := .dll
+
+PARSEVTT := $(BINDIR)parsevtt$(EXE)
+LIBWEBVTT := $(LIBDIR)libwebvtt$(LIB)
 
 all: libwebvtt parsevtt
 
 clean:
 	-$(RM) $(BINDIR)parsevtt $(LIBDIR)libwebvtt $(OBJECTS) $(OBJECTS1)
 
-libwebvtt: $(OBJECTS) | $(LIBDIR)
-	$(AR) rcs $(LIBDIR)libwebvtt.a $^
+libwebvtt: $(LIBWEBVTT)
 	
-parsevtt: $(OBJECTS1) libwebvtt | $(BINDIR)
-	$(CC) $(OBJECTS1) -L$(LIBDIR) -lwebvtt -o $(BINDIR)$@ $(CFLAGS)
+parsevtt: $(PARSEVTT)
 
-test: parsevtt
-	$(foreach T,$(TESTS),$(shell $(BINDIR)parsevtt -f $T))
+test: $(PARSEVTT)
+	$(foreach T,$(TESTS),$(shell $(PARSEVTT) -f $T))
+	
+$(LIBWEBVTT): $(OBJECTS) | $(LIBDIR)
+	$(AR) rcs $(LIBWEBVTT) $^
+	
+$(PARSEVTT): $(LIBWEBVTT) $(OBJECTS1) | $(BINDIR)
+	$(CC) $(OBJECTS1) -L$(LIBDIR) -lwebvtt -o $@ $(CFLAGS)
 	
 $(LIBDIR):
 	-mkdir $@ 2>/dev/null

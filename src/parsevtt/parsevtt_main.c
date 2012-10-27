@@ -1,24 +1,33 @@
-#include <webvtt/readers/filereader.h>
+#include <webvtt/parser.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include <ctype.h>
 
-typedef struct
-state_t
+static int WEBVTT_CALLBACK
+error( void *userdata, webvtt_uint line, webvtt_uint col, webvtt_error errcode )
 {
-	const char *input_file;
-	webvtt_reader reader;
-	webvtt_parser parser;
-} state_t, *state;
+	fprintf(stderr, "`%s' at %u:%u -- error: %s\n", (const char *)userdata, line, col, webvtt_strerror( errcode ) );
+	return 0; /* Die on all errors */
+}
+
+static void WEBVTT_CALLBACK 
+cue( void *userdata, webvtt_cue pcue )
+{
+	/**
+	 * Do nothing
+	 */
+}
 
 int
 main( int argc, char **argv )
 {
-	state_t s;
+	const char *input_file = 0;
 	int status = 0;
 	webvtt_status result;
+	webvtt_parser vtt;
+	FILE *fh;
 	int i;
-	memset( &s, 0, sizeof s );
 	for( i = 0; i < argc; ++i )
 	{
 		const char *a = argv[i];
@@ -32,11 +41,11 @@ main( int argc, char **argv )
 					while( isspace(*p) ) ++p;
 					if( *p )
 					{
-						s.input_file = p;
+						input_file = p;
 					}
 					else if( i+1 < argc )
 					{
-						s.input_file = argv[i+1];
+						input_file = argv[i+1];
 						++i;
 					}
 					else
@@ -53,29 +62,23 @@ main( int argc, char **argv )
 			}
 		}
 	}
-	if( !s.input_file )
+	if( !input_file )
 	{
 		fprintf( stderr, "error: missing input file.\n\nUsage: parsevtt -f <vttfile>\n" );
 		return 1;
 	}
 	
-	if( ( result = webvtt_filereader_open( &s.reader, s.input_file ) ) != WEBVTT_SUCCESS )
+	fh = fopen(input_file,"rb");
+	if( !fh )
 	{
-		const char *reason = "(reason unknown)";
-		switch( result )
-		{
-			case WEBVTT_OUT_OF_MEMORY: reason = "(out of memory)"; break;
-			case WEBVTT_INVALID_PARAM: reason = "(invalid parameter in call to webvtt_filereader_open())"; break;
-			case WEBVTT_NOT_SUPPORTED: reason = "(filereader not supported)"; break;
-		}
-		fprintf( stderr, "error: failed to open VTT stream `%s' %s.\n", s.input_file, reason );
+		fprintf( stderr, "error: failed to open `%s': %s\n", input_file, strerror(errno) );
 		return 1;
 	}
 	
-	if( ( result = webvtt_parser_new( WEBVTT_NOWAIT, s.reader, &s.parser ) ) != WEBVTT_SUCCESS )
+	if( ( result = webvtt_create_parser( &cue, &error, 0, &vtt ) ) != WEBVTT_SUCCESS )
 	{
 		fprintf( stderr, "error: failed to create VTT parser.\n" );
-		webvtt_reader_release( s.reader );
+		fclose( fh );
 		return 1;
 	}
 	
@@ -84,25 +87,24 @@ main( int argc, char **argv )
 	 */
 	do
 	{
-		webvtt_cue cue;
-		result =
-			webvtt_parser_get_cue( s.parser, &cue );
+		char buffer[0x1000];
+		webvtt_uint n_read = fread( buffer, 1, sizeof(buffer), fh );
+		if( !n_read && feof( fh ) )
+			break; /* Read the file successfully */
+		result = webvtt_parse_chunk( vtt, buffer, n_read );
 			
-		switch( result )
+		if( result == WEBVTT_PARSE_ERROR )
 		{
-			case WEBVTT_PARSE_ERROR:
-				/**
-				 * TODO:
-				 * Acquire some detailed information from the parser (Line number in input file,
-				 * column number, specific error
-				 */
-				fprintf( stderr, "error: parse error\n" );
-				status = 1;
-			break;
+			/**
+			 * TODO:
+			 * Acquire some detailed information from the parser (Line number in input file,
+			 * column number, specific error
+			 */
+			fprintf( stderr, "error: parse error\n" );
+			return 1;
 		}
-		
 	} while( result == WEBVTT_SUCCESS );
-	webvtt_parser_release( &s.parser );
-	webvtt_reader_release( s.reader );
+	webvtt_delete_parser( vtt );
+	fclose( fh );
 	return status;
 }

@@ -33,3 +33,4 @@ TODO:
 - Default error handlers when not provided by user
 - Internationalized error messages
 - Shared-library compilation
+- Routines for generating conformant WebVTT text

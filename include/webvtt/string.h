@@ -1,5 +1,5 @@
-#ifndef __WEBVTT_CSTRING_H__
-#	define __WEBVTT_CSTRING_H__
+#ifndef __WEBVTT_STRING_H__
+#	define __WEBVTT_STRING_H__
 #	include "util.h"
 /**
  * webvtt_wchar - A utf16 surrogate/character

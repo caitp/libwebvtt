@@ -1,5 +1,5 @@
-#ifndef __WEBVTT_CUTIL_H__
-#	define __WEBVTT_CUTIL_H__
+#ifndef __WEBVTT_UTIL_H__
+#	define __WEBVTT_UTIL_H__
 
 #	if defined(_WIN32) || defined(__WIN32__) || defined(__TOS_WIN__) || defined(__WINDOWS__)
 #		define WEBVTT_OS_WIN32 1

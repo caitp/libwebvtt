@@ -1,5 +1,5 @@
-#ifndef __WEBVTT_CPARSER_H__
-#	define __WEBVTT_CPARSER_H__
+#ifndef __WEBVTT_PARSER_H__
+#	define __WEBVTT_PARSER_H__
 #	include "string.h"
 #	include "cue.h"
 #	include "error.h"

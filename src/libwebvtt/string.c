@@ -36,6 +36,8 @@
 
 #include <webvtt/string.h>
 #include <string.h>
+#include <limits.h>
+
 #define REPLACEMENT_CHAR     (0xFFFD)
 #define MAXIMUM_UCS2         (0x0000FFFF)
 #define MAXIMUM_UTF          (0x0010FFFF)
@@ -99,7 +101,7 @@ webvtt_string_delete( webvtt_string pstr )
  * Reallocate string.
  */
 static webvtt_status
-grow( webvtt_uint32 need, webvtt_string *ppstr )
+grow( webvtt_uint need, webvtt_string *ppstr )
 {
 	/**
 	 * Grow to at least 'need' characters. Power of 2 growth.
@@ -149,9 +151,10 @@ grow( webvtt_uint32 need, webvtt_string *ppstr )
 #define GROW(nchar) \
 	do \
 	{ \
-		if( (s->length + (nchar)) < s->alloc ) \
+		webvtt_uint need = (webvtt_uint)(nchar); \
+		if( (s->length + need) < s->alloc ) \
 		{ \
-			if( (result = grow( (nchar), ppstr )) != WEBVTT_SUCCESS ) \
+			if( (result = grow( need, ppstr )) != WEBVTT_SUCCESS ) \
 			{ \
 				goto _end; \
 			} \
@@ -197,7 +200,7 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 	webvtt_string s;
 	webvtt_status result;
 	webvtt_uint32 uc = 0, bytes_left = 0, nc = 0, min_uc = 0;
-	webvtt_byte *src, *end;
+	const webvtt_byte *src, *end;
 	if( !ppstr || !*ppstr || !buf || !pos )
 	{
 		return WEBVTT_INVALID_PARAM;
@@ -216,7 +219,7 @@ webvtt_string_append_utf8( webvtt_string *ppstr,
 	/**
 	 * Ensure that we have at least 'len' characters available.
 	 */
-	GROW( end - src );
+	GROW( (end - src) );
 	while( src < end )
 	{
 		webvtt_byte c = *(src)++;

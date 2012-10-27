@@ -1,5 +1,6 @@
 SHELL = /bin/bash
-CFLAGS += -I./include -ggdb
+PYTHON := $(shell which python)
+CFLAGS += -I./include -ggdb -Wall
 SRCDIR := ./src/
 SOURCES := $(shell find $(SRCDIR)libwebvtt/*.c)
 OBJDIR := ./obj/
@@ -10,12 +11,17 @@ BINDIR := ./bin/
 SOURCES1 := $(shell find $(SRCDIR)parsevtt/*.c)
 OBJECTS1 := $(patsubst $(SRCDIR)%.c,$(OBJDIR)%.o,$(SOURCES1))
 OBJDIRS1 := $(sort $(dir $(OBJECTS1)))
-TESTS := $(wildcard tests/*.vtt)
-
+TESTDIR := ./test/
+SPECDIR := $(TESTDIR)spec/
+VTTDIR := $(TESTDIR)vtt/
+TESTS := $(shell find $(SPEC_DIR) -name '*.test' -print)
+VTTS := $(patsubst $(SPECDIR)%.test,$(VTTDIR)%.vtt,$(TESTS))
 LIB := .a
 EXE := .exe
 DLL := .dll
 
+STIPVTT := $(SPECDIR)strip-vtt.py
+TESTHARNESS := $(SPECDIR)run-tests-c.py
 PARSEVTT := $(BINDIR)parsevtt$(EXE)
 LIBWEBVTT := $(LIBDIR)libwebvtt$(LIB)
 
@@ -28,8 +34,17 @@ libwebvtt: $(LIBWEBVTT)
 	
 parsevtt: $(PARSEVTT)
 
-test: $(PARSEVTT)
-	$(foreach T,$(TESTS),$(shell $(PARSEVTT) -f $T))
+check-js: objdir $(VTT_SRC)
+	$(PYTHON) ./test/spec/run-tests-js.py $(OBJ_DIR_SPEC)
+
+$(VTTDIR):
+	-mkdir $@ > /dev/null
+	
+$(VTTDIR)%.vtt : $(SPECDIR)%.test
+	@$(PYTHON) $(STIPVTT) $< $@
+
+test: $(PARSEVTT) $(VTTDIR) $(VTTS)
+	$(PYTHON) $(TESTHARNESS) $(VTTDIR) $(PARSEVTT)
 	
 $(LIBWEBVTT): $(OBJECTS) | $(LIBDIR)
 	$(AR) rcs $(LIBWEBVTT) $^

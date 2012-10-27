@@ -51,7 +51,7 @@ webvtt_create_parser( webvtt_cue_fn_ptr on_read,
 		return WEBVTT_INVALID_PARAM;
 	}
 	
-	if( !(p = webvtt_alloc0( sizeof *p ) ) )
+	if( !(p = (webvtt_parser)webvtt_alloc0( sizeof *p ) ) )
 	{
 		return WEBVTT_OUT_OF_MEMORY;
 	}
@@ -111,7 +111,7 @@ find_bytes(const webvtt_byte *buffer, webvtt_uint len, const webvtt_byte *sbytes
 		{
 			return 1;
 		}
-	} while( len-- >= slen && buffer++ );
+	} while( len-- >= slen && *buffer++ );
 	return 0;
 }
 
@@ -329,7 +329,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						BEGIN_STATE(T_VERTICAL)
 							if( token == RL || token == LR )
 							{
-								self->cue->settings = &self->cue->_settings;
+								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
 								if( self->cue->settings->vertical )
 								{
 									ERROR(WEBVTT_VERTICAL_ALREADY_SET);
@@ -347,10 +347,10 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						BEGIN_STATE(T_POSITION)
 							if( token == INTEGER )
 							{
-								webvtt_byte *b = self->token;
+								const webvtt_byte *b = self->token;
 								webvtt_int64 value;
 								int digits;
-								self->cue->settings = &self->cue->_settings;
+								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
 								if( self->cue->settings->position )
 								{
 									ERROR(WEBVTT_POSITION_ALREADY_SET);
@@ -362,7 +362,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 								{
 									ERROR(WEBVTT_POSITION_BAD_VALUE);
 								}
-								self->cue->settings->position->value = value;
+								self->cue->settings->position->value = (webvtt_uint)value;
 								self->state = T_PRESETTING;
 							}
 							else
@@ -374,10 +374,10 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						BEGIN_STATE(T_SIZE)
 							if( token == PERCENTAGE )
 							{
-								webvtt_byte *b = self->token;
+								const webvtt_byte *b = self->token;
 								webvtt_int64 value;
 								int digits;
-								self->cue->settings = &self->cue->_settings;
+								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
 								if( self->cue->settings->size )
 								{
 									ERROR(WEBVTT_SIZE_ALREADY_SET);
@@ -389,7 +389,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 								{
 									ERROR(WEBVTT_SIZE_BAD_VALUE);
 								}
-								self->cue->settings->size->value = value;
+								self->cue->settings->size->value = (webvtt_uint)value;
 								self->state = T_PRESETTING;
 							}
 							else
@@ -401,10 +401,10 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						BEGIN_STATE(T_LINE)
 							if( token == INTEGER || token == PERCENTAGE )
 							{
-								webvtt_byte *b = self->token;
+								const webvtt_byte *b = self->token;
 								webvtt_int64 value;
 								int digits;
-								self->cue->settings = &self->cue->_settings;
+								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
 								if( self->cue->settings->line )
 								{
 									ERROR(WEBVTT_LINE_ALREADY_SET);
@@ -425,13 +425,13 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 									else
 									{
 										self->cue->settings->line->is_percentage = 1;
-										self->cue->settings->line->value.percentage = value;
+										self->cue->settings->line->value.percentage = (webvtt_uint)value;
 									}
 								}
 								else
 								{
 									self->cue->settings->line->is_percentage = 0;
-									self->cue->settings->line->value.line = value;
+									self->cue->settings->line->value.line = (webvtt_int)value;
 								}
 								self->state = T_PRESETTING;
 							}
@@ -444,7 +444,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						BEGIN_STATE(T_ALIGN)
 							if( token == START || token == MIDDLE || token == END )
 							{
-								self->cue->settings = &self->cue->_settings;
+								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
 								if( self->cue->settings->align )
 								{
 									ERROR(WEBVTT_ALIGN_ALREADY_SET);
@@ -495,7 +495,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						int stat;
 						if( !self->cue )
 						{
-							self->cue = webvtt_alloc0( sizeof *(self->cue) );
+							self->cue = (cue *)webvtt_alloc0( sizeof *(self->cue) );
 							if( !self->cue )
 							{
 								ERROR(WEBVTT_ALLOCATION_FAILED);
@@ -527,7 +527,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						}
 						if( stat )
 						{
-							if(  find_bytes( self->line_buffer->text, self->line_buffer->length, "-->", 3 ) )
+							if(  find_bytes( (const webvtt_byte *)self->line_buffer->text, self->line_buffer->length, (const webvtt_byte *)"-->", 3 ) )
 							{
 								self->mode = M_LINE_TOKENS;
 								self->state = T_STARTTIME;
@@ -581,7 +581,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 							/**
 							 * Inform the user that we've read a cue
 							 */
-							self->read( self->userdata, self->cue );
+							self->read( self->userdata, (webvtt_cue)self->cue );
 							self->cue = 0;
 
 							self->mode = M_BUFFER_TOKENS;
@@ -595,6 +595,17 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 #endif
 		}
 	}
+
+	if( self->cue )
+	{
+		return WEBVTT_UNFINISHED;
+	}
+
+	if( pos == len || token == UNFINISHED )
+	{
+		return WEBVTT_SUCCESS;
+	}
+	return WEBVTT_PARSE_ERROR;
 }
 
 /**

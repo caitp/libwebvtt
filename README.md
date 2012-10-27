@@ -35,3 +35,4 @@ Available from https://github.com/caitp/libwebvtt
 - Shared-library compilation
 - Routines for generating conformant WebVTT text
 - Language bindings (Rust, C++, D, etc)
+- GNU Autotools build system to enhance portability (With MPL2'd M4 from Mozilla-Central to support Windows environments)

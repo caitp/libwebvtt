@@ -495,7 +495,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						int stat;
 						if( !self->cue )
 						{
-							if( webvtt_create_cue( &((webvtt_cue)self->cue) ) == WEBVTT_OUT_OF_MEMORY )
+							if( webvtt_create_cue( (webvtt_cue*)&self->cue ) == WEBVTT_OUT_OF_MEMORY )
 							{
 								ERROR(WEBVTT_ALLOCATION_FAILED);
 							}

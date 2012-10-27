@@ -128,6 +128,13 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 			case M_BUFFER_TOKENS:
 			{
 				token = webvtt_lex( self, (webvtt_byte *)buffer, &pos, len );
+				if( self->state == T_CUEEOL && (token == UNFINISHED || token == BADTOKEN ) )
+				{
+					pos -= self->token_pos;
+					self->mode = M_READ_LINE;
+					self->state = T_CUEID;
+					continue;
+				}
 				if( token == UNFINISHED )
 				{
 					return WEBVTT_UNFINISHED;
@@ -201,6 +208,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 							IF_TRANSITION(NEWLINE,T_CUEEOL)
 							ELSE
 								self->mode = M_READ_LINE;
+								pos -= self->token_pos;
 								self->state = T_CUEID;
 							ENDIF
 						END_STATE
@@ -462,7 +470,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 								{
 									self->cue->settings->align->value = WEBVTT_ALIGN_END;
 								}
-								self->mode = T_PRESETTING;
+								self->state = T_PRESETTING;
 							}
 							else
 							{
@@ -491,6 +499,7 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 						}
 					END_STATE
 
+					case T_STARTTIME: /* Looks ugly doesn't it? */
 					BEGIN_STATE(T_CUEID)
 						int stat;
 						if( !self->cue )

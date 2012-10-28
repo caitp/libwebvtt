@@ -87,9 +87,19 @@ finish_cue( webvtt_parser self )
 {
 	if( self->cue )
 	{
-		webvtt_cue cue = (webvtt_cue)self->cue;
-		self->cue = 0;
-		self->read( self->userdata, (webvtt_cue)self->cue );
+		/**
+		 * Validate the cue
+		 */
+		if( webvtt_validate_cue( (webvtt_cue)self->cue ) )
+		{
+			webvtt_cue cue = (webvtt_cue)self->cue;
+			self->cue = 0;
+			self->read( self->userdata, (webvtt_cue)self->cue );
+		}
+		else
+		{
+			webvtt_delete_cue( (webvtt_cue *)&self->cue );
+		}
 	}
 }
 
@@ -140,6 +150,22 @@ webvtt_finish_parsing( webvtt_parser self )
 
 				break;
 			}
+			case T_STARTTIME:
+			/* We were brought to this state because the buffer ended with an EOL character and we were expecting a timestamp.
+			   It's unlikely that we have one, so this is probably an error */
+			if( self->line_buffer && self->line_buffer->length )
+			{
+				webvtt_status ret = webvtt_parse_chunk( self, self->line_buffer->text, self->line_buffer->length );
+				if( ret )
+				{
+					return ret;
+				}
+			}
+			else
+			{
+				ERROR(WEBVTT_CUE_INCOMPLETE);
+			}
+			break;
 
 			case T_PAYLOAD:
 			case T_PAYLOADEOL:
@@ -380,250 +406,256 @@ webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len )
 				}
 
 				token = webvtt_lex( self, (webvtt_byte *)self->line_buffer->text, &self->line_pos, self->line_buffer->length, 1 );
-				
-				if( 0 )
-				{
-				}
-				else
-				{
-					BEGIN_DFA
-						BEGIN_STATE(T_STARTTIME)
-							if( token == TIMESTAMP )
+			
+				BEGIN_DFA
+					BEGIN_STATE(T_STARTTIME)
+						if( token == TIMESTAMP )
+						{
+							if( !parse_timestamp(self, self->token, &self->cue->from ) )
 							{
-								if( !parse_timestamp(self, self->token, &self->cue->from ) )
-								{
-									ERROR(WEBVTT_MALFORMED_TIMESTAMP);
-								}
-								self->state = T_SEP1;
+								ERROR(WEBVTT_MALFORMED_TIMESTAMP);
 							}
-							else
-							{
-								ERROR(WEBVTT_EXPECTED_TIMESTAMP);
-							}
-						END_STATE
+							self->state = T_SEP1;
+						}
+						else
+						{
+							ERROR(WEBVTT_EXPECTED_TIMESTAMP);
+						}
+					END_STATE
 
-						BEGIN_STATE(T_SEP1)
-							IF_TRANSITION(WHITESPACE,T_SEP2)
-							ELSE
-								ERROR(WEBVTT_EXPECTED_WHITESPACE);
-								IF_TRANSITION(SEPARATOR,T_SEP3)
-								ENDIF
-							ENDIF
-						END_STATE
-
-						BEGIN_STATE(T_SEP2)
+					BEGIN_STATE(T_SEP1)
+						IF_TRANSITION(WHITESPACE,T_SEP2)
+						ELSE
+							ERROR(WEBVTT_EXPECTED_WHITESPACE);
 							IF_TRANSITION(SEPARATOR,T_SEP3)
-							ELSE
-								ERROR(WEBVTT_MISSING_CUETIME_SEPARATOR);
-								if( token == TIMESTAMP )
-								{
-									if( !parse_timestamp( self, self->token, &self->cue->until ) )
-									{
-										ERROR(WEBVTT_MALFORMED_TIMESTAMP);
-									}
-									self->state = T_PRESETTING;
-								}
 							ENDIF
-						END_STATE
+						ENDIF
+					END_STATE
 
-						BEGIN_STATE(T_SEP3)
-							IF_TRANSITION(WHITESPACE,T_ENDTIME)
-							ELSE
-								ERROR(WEBVTT_EXPECTED_WHITESPACE);
-								if( token == TIMESTAMP )
-								{
-									if( !parse_timestamp(self, self->token, &self->cue->until ) )
-									{
-										ERROR(WEBVTT_MALFORMED_TIMESTAMP);
-									}
-									self->state = T_PRESETTING;
-								}
-							ENDIF
-						END_STATE
-
-						BEGIN_STATE(T_ENDTIME)
+					BEGIN_STATE(T_SEP2)
+						IF_TRANSITION(SEPARATOR,T_SEP3)
+						ELSE
+							ERROR(WEBVTT_MISSING_CUETIME_SEPARATOR);
 							if( token == TIMESTAMP )
 							{
 								if( !parse_timestamp( self, self->token, &self->cue->until ) )
 								{
 									ERROR(WEBVTT_MALFORMED_TIMESTAMP);
 								}
+								if( self->cue->until <= self->cue->from )
+								{
+									ERROR(WEBVTT_INVALID_ENDTIME);
+								}
 								self->state = T_PRESETTING;
 							}
-							else
+						ENDIF
+					END_STATE
+
+					BEGIN_STATE(T_SEP3)
+						IF_TRANSITION(WHITESPACE,T_ENDTIME)
+						ELSE
+							ERROR(WEBVTT_EXPECTED_WHITESPACE);
+							if( token == TIMESTAMP )
 							{
-								ERROR(WEBVTT_EXPECTED_TIMESTAMP);
-							}
-						END_STATE
-
-						BEGIN_STATE(T_PRESETTING)
-							IF_TRANSITION(WHITESPACE,T_SETTING)
-							ELSE
-								ERROR(WEBVTT_EXPECTED_WHITESPACE);
-							ENDIF
-						END_STATE
-
-						BEGIN_STATE(T_SETTING)
-							IF_TRANSITION(VERTICAL,T_VERTICAL)
-							ELIF_TRANSITION(POSITION,T_POSITION)
-							ELIF_TRANSITION(LINE,T_LINE)
-							ELIF_TRANSITION(SIZE,T_SIZE)
-							ELIF_TRANSITION(ALIGN,T_ALIGN)
-							ELIF_TRANSITION(NEWLINE,T_PAYLOAD)
-								webvtt_bytearray_delete(&self->line_buffer);
-								self->mode = M_READ_LINE;
-							ELSE
-								ERROR(WEBVTT_INVALID_CUESETTING);
-							ENDIF
-						END_STATE
-
-						BEGIN_STATE(T_VERTICAL)
-							if( token == RL || token == LR )
-							{
-								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
-								if( self->cue->settings->vertical )
+								if( !parse_timestamp(self, self->token, &self->cue->until ) )
 								{
-									ERROR(WEBVTT_VERTICAL_ALREADY_SET);
+									ERROR(WEBVTT_MALFORMED_TIMESTAMP);
 								}
-								self->cue->settings->vertical = &self->cue->_settings._vertical;
-								self->cue->settings->vertical->value = token == RL ? WEBVTT_VERTICAL_RL : WEBVTT_VERTICAL_LR;
+								if( self->cue->until <= self->cue->from )
+								{
+									ERROR(WEBVTT_INVALID_ENDTIME);
+								}
 								self->state = T_PRESETTING;
 							}
-							else
-							{
-								ERROR(WEBVTT_VERTICAL_BAD_VALUE);
-							}
-						END_STATE
+						ENDIF
+					END_STATE
 
-						BEGIN_STATE(T_POSITION)
-							if( token == PERCENTAGE )
+					BEGIN_STATE(T_ENDTIME)
+						if( token == TIMESTAMP )
+						{
+							if( !parse_timestamp( self, self->token, &self->cue->until ) )
 							{
-								const webvtt_byte *b = self->token;
-								webvtt_int64 value;
-								int digits;
-								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
-								if( self->cue->settings->position )
-								{
-									ERROR(WEBVTT_POSITION_ALREADY_SET);
-								}
-								self->cue->settings->position = &self->cue->_settings._position;
+								ERROR(WEBVTT_MALFORMED_TIMESTAMP);
+							}
+							if( self->cue->until <= self->cue->from )
+							{
+								ERROR(WEBVTT_INVALID_ENDTIME);
+							}
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_EXPECTED_TIMESTAMP);
+						}
+					END_STATE
+
+					BEGIN_STATE(T_PRESETTING)
+						IF_TRANSITION(WHITESPACE,T_SETTING)
+						ELSE
+							ERROR(WEBVTT_EXPECTED_WHITESPACE);
+						ENDIF
+					END_STATE
+
+					BEGIN_STATE(T_SETTING)
+						IF_TRANSITION(VERTICAL,T_VERTICAL)
+						ELIF_TRANSITION(POSITION,T_POSITION)
+						ELIF_TRANSITION(LINE,T_LINE)
+						ELIF_TRANSITION(SIZE,T_SIZE)
+						ELIF_TRANSITION(ALIGN,T_ALIGN)
+						ELIF_TRANSITION(NEWLINE,T_PAYLOAD)
+							webvtt_bytearray_delete(&self->line_buffer);
+							self->mode = M_READ_LINE;
+						ELSE
+							ERROR(WEBVTT_INVALID_CUESETTING);
+						ENDIF
+					END_STATE
+
+					BEGIN_STATE(T_VERTICAL)
+						if( token == RL || token == LR )
+						{
+							self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
+							if( self->cue->settings->vertical )
+							{
+								ERROR(WEBVTT_VERTICAL_ALREADY_SET);
+							}
+							self->cue->settings->vertical = &self->cue->_settings._vertical;
+							self->cue->settings->vertical->value = token == RL ? WEBVTT_VERTICAL_RL : WEBVTT_VERTICAL_LR;
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_VERTICAL_BAD_VALUE);
+						}
+					END_STATE
+
+					BEGIN_STATE(T_POSITION)
+						if( token == PERCENTAGE )
+						{
+							const webvtt_byte *b = self->token;
+							webvtt_int64 value;
+							int digits;
+							self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
+							if( self->cue->settings->position )
+							{
+								ERROR(WEBVTT_POSITION_ALREADY_SET);
+							}
+							self->cue->settings->position = &self->cue->_settings._position;
 								
-								value = parse_int( &b, &digits );
-								if( digits == 0 )
-								{
-									ERROR(WEBVTT_POSITION_BAD_VALUE);
-								}
-								self->cue->settings->position->value = (webvtt_uint)value;
-								self->state = T_PRESETTING;
-							}
-							else
+							value = parse_int( &b, &digits );
+							if( digits == 0 )
 							{
 								ERROR(WEBVTT_POSITION_BAD_VALUE);
 							}
-						END_STATE
+							self->cue->settings->position->value = (webvtt_uint)value;
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_POSITION_BAD_VALUE);
+						}
+					END_STATE
 
-						BEGIN_STATE(T_SIZE)
-							if( token == PERCENTAGE )
+					BEGIN_STATE(T_SIZE)
+						if( token == PERCENTAGE )
+						{
+							const webvtt_byte *b = self->token;
+							webvtt_int64 value;
+							int digits;
+							self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
+							if( self->cue->settings->size )
 							{
-								const webvtt_byte *b = self->token;
-								webvtt_int64 value;
-								int digits;
-								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
-								if( self->cue->settings->size )
-								{
-									ERROR(WEBVTT_SIZE_ALREADY_SET);
-								}
-								self->cue->settings->size = &self->cue->_settings._size;
-								
-								value = parse_int( &b, &digits );
-								if( digits == 0 )
-								{
-									ERROR(WEBVTT_SIZE_BAD_VALUE);
-								}
-								self->cue->settings->size->value = (webvtt_uint)value;
-								self->state = T_PRESETTING;
+								ERROR(WEBVTT_SIZE_ALREADY_SET);
 							}
-							else
+							self->cue->settings->size = &self->cue->_settings._size;
+								
+							value = parse_int( &b, &digits );
+							if( digits == 0 )
 							{
 								ERROR(WEBVTT_SIZE_BAD_VALUE);
 							}
-						END_STATE
+							self->cue->settings->size->value = (webvtt_uint)value;
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_SIZE_BAD_VALUE);
+						}
+					END_STATE
 
-						BEGIN_STATE(T_LINE)
-							if( token == INTEGER || token == PERCENTAGE )
+					BEGIN_STATE(T_LINE)
+						if( token == INTEGER || token == PERCENTAGE )
+						{
+							const webvtt_byte *b = self->token;
+							webvtt_int64 value;
+							int digits;
+							self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
+							if( self->cue->settings->line )
 							{
-								const webvtt_byte *b = self->token;
-								webvtt_int64 value;
-								int digits;
-								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
-								if( self->cue->settings->line )
-								{
-									ERROR(WEBVTT_LINE_ALREADY_SET);
-								}
-								self->cue->settings->line = &self->cue->_settings._line;
-								
-								value = parse_int( &b, &digits );
-								if( digits == 0 )
-								{
-									ERROR(WEBVTT_LINE_BAD_VALUE);
-								}
-								if( token == PERCENTAGE )
-								{
-									if( value < 0 )
-									{
-										ERROR(WEBVTT_LINE_BAD_VALUE);
-									}
-									else
-									{
-										self->cue->settings->line->is_percentage = 1;
-										self->cue->settings->line->value.percentage = (webvtt_uint)value;
-									}
-								}
-								else
-								{
-									self->cue->settings->line->is_percentage = 0;
-									self->cue->settings->line->value.line = (webvtt_int)value;
-								}
-								self->state = T_PRESETTING;
+								ERROR(WEBVTT_LINE_ALREADY_SET);
 							}
-							else
+							self->cue->settings->line = &self->cue->_settings._line;
+								
+							value = parse_int( &b, &digits );
+							if( digits == 0 )
 							{
 								ERROR(WEBVTT_LINE_BAD_VALUE);
 							}
-						END_STATE
-
-						BEGIN_STATE(T_ALIGN)
-							if( token == START || token == MIDDLE || token == END )
+							if( token == PERCENTAGE )
 							{
-								self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
-								if( self->cue->settings->align )
+								if( value < 0 )
 								{
-									ERROR(WEBVTT_ALIGN_ALREADY_SET);
-								}
-								self->cue->settings->align = &self->cue->_settings._align;
-								if( token == START )
-								{
-									self->cue->settings->align->value = WEBVTT_ALIGN_START;
-								}
-								else if( token == MIDDLE )
-								{
-									self->cue->settings->align->value = WEBVTT_ALIGN_MIDDLE;
+									ERROR(WEBVTT_LINE_BAD_VALUE);
 								}
 								else
 								{
-									self->cue->settings->align->value = WEBVTT_ALIGN_END;
+									self->cue->settings->line->is_percentage = 1;
+									self->cue->settings->line->value.percentage = (webvtt_uint)value;
 								}
-								self->state = T_PRESETTING;
 							}
 							else
 							{
-								ERROR(WEBVTT_ALIGN_BAD_VALUE);
+								self->cue->settings->line->is_percentage = 0;
+								self->cue->settings->line->value.line = (webvtt_int)value;
 							}
-						END_STATE
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_LINE_BAD_VALUE);
+						}
+					END_STATE
 
-					END_DFA
-					self->token[ self->token_pos = 0 ] = 0;
-				}
+					BEGIN_STATE(T_ALIGN)
+						if( token == START || token == MIDDLE || token == END )
+						{
+							self->cue->settings = (webvtt_cue_settings)&self->cue->_settings;
+							if( self->cue->settings->align )
+							{
+								ERROR(WEBVTT_ALIGN_ALREADY_SET);
+							}
+							self->cue->settings->align = &self->cue->_settings._align;
+							if( token == START )
+							{
+								self->cue->settings->align->value = WEBVTT_ALIGN_START;
+							}
+							else if( token == MIDDLE )
+							{
+								self->cue->settings->align->value = WEBVTT_ALIGN_MIDDLE;
+							}
+							else
+							{
+								self->cue->settings->align->value = WEBVTT_ALIGN_END;
+							}
+							self->state = T_PRESETTING;
+						}
+						else
+						{
+							ERROR(WEBVTT_ALIGN_BAD_VALUE);
+						}
+					END_STATE
+
+				END_DFA
+				self->token[ self->token_pos = 0 ] = 0;
 			}
 			break;
 #endif
@@ -888,11 +920,11 @@ parse_timestamp( webvtt_parser self, const webvtt_byte *b, webvtt_timestamp *res
 	   read the next value */
 	if (have_hours || (*b == COLON))
 	{
-		if (!*b++ != COLON)
+		if( *b++ != COLON )
 		{
 			goto _malformed;
 		}
-        if (!*b || !ASCII_ISDIGIT(*b))
+        if( !ASCII_ISDIGIT(*b) )
 		{
 			goto _malformed;
 		}
@@ -935,6 +967,5 @@ parse_timestamp( webvtt_parser self, const webvtt_byte *b, webvtt_timestamp *res
 	
 	return 1;
 _malformed:
-	ERROR(WEBVTT_MALFORMED_TIMESTAMP);
 	return 0;
 }

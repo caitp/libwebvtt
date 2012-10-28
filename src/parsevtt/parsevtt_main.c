@@ -31,7 +31,7 @@ parse_fh(FILE *fh, webvtt_parser vtt)
 	{
 		char buffer[0x1000];
 		webvtt_uint n_read = (webvtt_uint)fread( buffer, 1, sizeof(buffer), fh );
-		if( !n_read && feof( fh ) )
+		if( !n_read && feof( fh ) ) 
 			break; /* Read the file successfully */
 		result = webvtt_parse_chunk( vtt, buffer, n_read );
 			

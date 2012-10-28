@@ -12,6 +12,7 @@ static const char *errstr[] =
 	/* WEBVTT_EXPECTED_TIMESTAMP */ "expected webvtt-timestamp",
 	/* WEBVTT_MISSING_CUETIME_SEPARATOR */ "missing webvtt-cuetime-separator `-->'",
 	/* WEBVTT_MISSING_CUESETTING_DELIMITER */ "missing whitespace before webvtt-cuesetting",
+	/* WEBVTT_INVALID_ENDTIME */ "webvtt-cue end-time must have value greater than start-time",
 	/* WEBVTT_INVALID_CUESETTING */ "unrecognized webvtt-cue-setting",
 	/* WEBVTT_VERTICAL_ALREADY_SET */ "'vertical' cue-setting already used",
 	/* WEBVTT_VERTICAL_BAD_VALUE */ "'vertical' setting must have a value of either 'lr' or 'rl'",

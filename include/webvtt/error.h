@@ -26,6 +26,8 @@ webvtt_error_t
 	WEBVTT_MISSING_CUETIME_SEPARATOR,
 	/* Missing cuesetting delimiter */
 	WEBVTT_MISSING_CUESETTING_DELIMITER,
+	/* End-time is less than or equal to start time */
+	WEBVTT_INVALID_ENDTIME,
 	/* Invalid cue-setting */
 	WEBVTT_INVALID_CUESETTING,
 	/* 'vertical' setting already exists for this cue. */

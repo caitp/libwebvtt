@@ -86,5 +86,6 @@ webvtt_cs_vertical webvtt_create_cue_vertical( webvtt_cue cue );
 webvtt_cs_line webvtt_get_create_line( webvtt_cue cue );
 webvtt_cs_size webvtt_get_create_size( webvtt_cue cue );
 webvtt_cs_position webvtt_create_cue_position( webvtt_cue cue );
+int webvtt_validate_cue( webvtt_cue cue );
 
 #endif

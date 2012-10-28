@@ -117,3 +117,26 @@ webvtt_create_cue_position( webvtt_cue cue )
 	}
 	return 0;
 }
+
+int
+webvtt_validate_cue( webvtt_cue cue )
+{
+	if( cue )
+	{
+		/**
+		 * validate cue-times (Can't do checks against previously parsed cuetimes. That's the applications responsibility
+		 */
+		if( cue->until <= cue->from )
+		{
+			goto error;
+		}
+
+		/**
+		 * Don't do any payload validation, because this would involve parsing the payload, which is optional.
+		 */
+		return 1;
+	}
+
+error:
+	return 0;
+}

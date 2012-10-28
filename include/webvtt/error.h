@@ -48,6 +48,10 @@ webvtt_error_t
 	WEBVTT_ALIGN_ALREADY_SET,
 	/* Bad 'align' value */
 	WEBVTT_ALIGN_BAD_VALUE,
+	/* A cue-text object contains the string "-->", which needs to be escaped */
+	WEBVTT_CUE_CONTAINS_SEPARATOR,
+	/* A webvtt cue contains only a cue-id, and no cuetimes or payload. */
+	WEBVTT_CUE_INCOMPLETE,
 };
 
 const char *webvtt_strerror( webvtt_error );

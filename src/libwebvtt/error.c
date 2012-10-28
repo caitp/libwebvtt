@@ -23,6 +23,8 @@ static const char *errstr[] =
 	/* WEBVTT_SIZE_BAD_VALUE */ "'size' cue-setting must have percentage (%) value",
 	/* WEBVTT_ALIGN_ALREADY_SET */ "'align' cue-setting already used",
 	/* WEBVTT_ALIGN_BAD_VALUE */ "'align' cue-setting must have a value of either 'start', 'middle', or 'end'",
+	/* WEBVTT_CUE_CONTAINS_SEPARATOR */ "cue-text line contains unescaped timestamp separator '-->'",
+	/* WEBVTT_CUE_INCOMPLETE */ "cue contains cue-id, but is missing cuetimes or cue text",
 };
 
 /**

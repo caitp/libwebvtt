@@ -21,6 +21,38 @@ cue( void *userdata, webvtt_cue cue )
 }
 
 int
+parse_fh(FILE *fh, webvtt_parser vtt)
+{
+	/**
+	 * Try to parse the file.
+	 */
+	webvtt_status result;
+	do
+	{
+		char buffer[0x1000];
+		webvtt_uint n_read = (webvtt_uint)fread( buffer, 1, sizeof(buffer), fh );
+		if( !n_read && feof( fh ) )
+			break; /* Read the file successfully */
+		result = webvtt_parse_chunk( vtt, buffer, n_read );
+			
+		if( result == WEBVTT_PARSE_ERROR )
+		{
+			/**
+			 * TODO:
+			 * Acquire some detailed information from the parser (Line number in input file,
+			 * column number, specific error
+			 */
+			return 1;
+		}
+	} while( result == WEBVTT_SUCCESS );
+	if( webvtt_finish_parsing( vtt ) == WEBVTT_PARSE_ERROR )
+	{
+		return 1;
+	}
+	return 0;
+}
+
+int
 main( int argc, char **argv )
 {
 	const char *input_file = 0;
@@ -29,6 +61,7 @@ main( int argc, char **argv )
 	webvtt_parser vtt;
 	FILE *fh;
 	int i;
+	int ret = 0;
 	for( i = 0; i < argc; ++i )
 	{
 		const char *a = argv[i];
@@ -66,46 +99,31 @@ main( int argc, char **argv )
 	if( !input_file )
 	{
 		fprintf( stderr, "error: missing input file.\n\nUsage: parsevtt -f <vttfile>\n" );
-		return 1;
+		ret = 1;
 	}
 	
 	fh = fopen(input_file,"rb");
 	if( !fh )
 	{
 		fprintf( stderr, "error: failed to open `%s': %s\n", input_file, strerror(errno) );
-		return 1;
+		ret = 1;
 	}
 	
 	if( ( result = webvtt_create_parser( &cue, &error, input_file, &vtt ) ) != WEBVTT_SUCCESS )
 	{
 		fprintf( stderr, "error: failed to create VTT parser.\n" );
 		fclose( fh );
-		return 1;
+		ret = 1;
 	}
 	
-	/**
-	 * Try to parse the file.
-	 */
-	do
+	if( !ret )
 	{
-		char buffer[0x1000];
-		webvtt_uint n_read = (webvtt_uint)fread( buffer, 1, sizeof(buffer), fh );
-		if( !n_read && feof( fh ) )
-			break; /* Read the file successfully */
-		result = webvtt_parse_chunk( vtt, buffer, n_read );
-			
-		if( result == WEBVTT_PARSE_ERROR )
-		{
-			/**
-			 * TODO:
-			 * Acquire some detailed information from the parser (Line number in input file,
-			 * column number, specific error
-			 */
-			return 1;
-		}
-	} while( result == WEBVTT_SUCCESS );
-	webvtt_finish_parsing( vtt );
+		ret = parse_fh( fh, vtt );
+	}
 	webvtt_delete_parser( vtt );
-	fclose( fh );
-	return 0;
+	if( fh )
+	{
+		fclose( fh );
+	}
+	return ret;
 }

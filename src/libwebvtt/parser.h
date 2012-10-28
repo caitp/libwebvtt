@@ -64,6 +64,7 @@ webvtt_parser_t
 	webvtt_error_fn_ptr error;
 	void *userdata;
 	webvtt_bool mode;
+	webvtt_bool finish;
 
 	/**
 	 * Current cue
@@ -85,7 +86,7 @@ webvtt_parser_t
 	webvtt_byte token[0x100];
 };
 
-webvtt_token webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_uint length );
+webvtt_token webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_uint length, int finish );
 
 #define ERROR(Code) \
 do \

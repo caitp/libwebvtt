@@ -23,7 +23,7 @@
 #define DEFAULT(actions) default: { actions } break;
 #define ELSE } else {
 #define ENDIF }
-#define RESET self->token_pos = 0; self->tstate = T_INITIAL; self->token[0] = 0
+#define RESET self->column = 0; self->token_pos = 0; self->tstate = T_INITIAL; self->token[0] = 0
 #define CHECK_BROKEN_TIMESTAMP \
 if(self->token_pos == sizeof(self->token) - 1 ) \
 { \
@@ -41,11 +41,11 @@ enum token_state_t
 	T_POSITION6, T_POSITION7, T_ALIGN0, T_ALIGN1, T_ALIGN2, T_ALIGN3, T_ALIGN4, T_L0, T_LINE1, T_LINE2, T_LINE3,
 	T_VERTICAL0, T_VERTICAL1, T_VERTICAL2, T_VERTICAL3, T_VERTICAL4, T_VERTICAL5, T_VERTICAL6, T_VERTICAL7, T_RL0,
 	T_S0, T_SIZE1, T_SIZE2, T_SIZE3, T_START1, T_START2, T_START3, T_MIDDLE0, T_MIDDLE1, T_MIDDLE2, T_MIDDLE3,
-	T_MIDDLE4, T_END0, T_END1, T_TIMESTAMP1, T_TIMESTAMP2, T_TIMESTAMP3
+	T_MIDDLE4, T_END0, T_END1, T_TIMESTAMP1, T_TIMESTAMP2, T_TIMESTAMP3, T_TIMESTAMP4, T_TIMESTAMP5
 };
 
 webvtt_token
-webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_uint length )
+webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_uint length, int finish )
 {
 	while( *pos < length )
 	{
@@ -128,9 +128,10 @@ webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_ui
 				IF_DIGIT
 					DO_STATE(T_DIGIT0);
 				ELSE
-				BEGIN_BYTE
-					STATE_IF('-',T_SEP1);
-				END_BYTE
+					BEGIN_BYTE
+						STATE_IF('-',T_SEP1);
+					END_BYTE
+				ENDIF
 			END_STATE
 			BEGIN_STATE(T_SEP1)
 				BEGIN_BYTE
@@ -145,11 +146,11 @@ webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_ui
 				IF_DIGIT
 					DO_STATE(T_DIGIT0);
 				ELSE
-				BEGIN_BYTE
-					STATE_IF(':',T_TIMESTAMP1);
-					TOKEN_IF('%',PERCENTAGE);
-					DEFAULT(BACKUP(); return INTEGER;)
-				END_BYTE_
+					BEGIN_BYTE
+						STATE_IF(':',T_TIMESTAMP1);
+						TOKEN_IF('%',PERCENTAGE);
+						DEFAULT(BACKUP(); return INTEGER;)
+					END_BYTE_
 				ENDIF
 			END_STATE
 			BEGIN_STATE(T_NEWLINE0)
@@ -381,7 +382,23 @@ webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_ui
 				END_BYTE
 			END_STATE
 			BEGIN_STATE(T_TIMESTAMP3)
-				IF_DIGIT DO_STATE(T_TIMESTAMP3); 
+				IF_DIGIT DO_STATE(T_TIMESTAMP4); 
+				ELSE
+					BACKUP();
+					return BADTOKEN;
+				ENDIF
+			END_STATE
+			BEGIN_STATE(T_TIMESTAMP4)
+				IF_DIGIT DO_STATE(T_TIMESTAMP5); 
+				ELSE
+					BACKUP();
+					return BADTOKEN;
+				ENDIF
+			END_STATE
+			BEGIN_STATE(T_TIMESTAMP5)
+				IF_DIGIT
+					self->tstate = T_INITIAL; 
+					return TIMESTAMP;
 				ELSE
 					BACKUP(); 
 					return TIMESTAMP;
@@ -389,6 +406,10 @@ webvtt_lex( webvtt_parser self, webvtt_byte *buffer, webvtt_uint *pos, webvtt_ui
 			END_STATE
 		}
 	}
+	if( self->tstate == T_DIGIT0 && finish )
+	{
+		self->tstate = T_INITIAL;
+		return INTEGER;
 	}
 	return self->token_pos ? UNFINISHED : BADTOKEN;
 }

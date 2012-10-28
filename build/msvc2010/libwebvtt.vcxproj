@@ -177,6 +177,7 @@
     <ClCompile Include="..\..\src\libwebvtt\alloc.c" />
     <ClCompile Include="..\..\src\libwebvtt\bytearray.c" />
     <ClCompile Include="..\..\src\libwebvtt\cue.c" />
+    <ClCompile Include="..\..\src\libwebvtt\cuetext.c" />
     <ClCompile Include="..\..\src\libwebvtt\error.c" />
     <ClCompile Include="..\..\src\libwebvtt\lexer.c" />
     <ClCompile Include="..\..\src\libwebvtt\parser.c" />
@@ -189,7 +190,6 @@
     <ClInclude Include="..\..\include\webvtt\util.h" />
     <ClInclude Include="..\..\include\webvtt\parser.h" />
     <ClInclude Include="..\..\src\libwebvtt\bytearray.h" />
-    <ClInclude Include="..\..\src\libwebvtt\internal.h" />
     <ClInclude Include="..\..\src\libwebvtt\parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -20,4 +20,7 @@ webvtt_status webvtt_create_parser( webvtt_cue_fn_ptr on_read, webvtt_error_fn_p
 void webvtt_delete_parser( webvtt_parser parser );
 webvtt_status webvtt_parse_chunk( webvtt_parser self, const void *buffer, webvtt_uint len );
 webvtt_status webvtt_finish_parsing( webvtt_parser self );
+webvtt_status webvtt_parse_cuetext( webvtt_parser self, webvtt_uint line,
+	const webvtt_wchar *pch, const webvtt_uint len, webvtt_node *pnode );
+
 #endif

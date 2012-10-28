@@ -109,7 +109,7 @@ main( int argc, char **argv )
 		ret = 1;
 	}
 	
-	if( ( result = webvtt_create_parser( &cue, &error, input_file, &vtt ) ) != WEBVTT_SUCCESS )
+	if( ( result = webvtt_create_parser( &cue, &error, (void *)input_file, &vtt ) ) != WEBVTT_SUCCESS )
 	{
 		fprintf( stderr, "error: failed to create VTT parser.\n" );
 		fclose( fh );

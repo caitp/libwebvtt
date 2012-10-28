@@ -34,15 +34,15 @@
     <ClCompile Include="..\..\src\libwebvtt\cue.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\libwebvtt\cuetext.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\libwebvtt\parser.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\libwebvtt\bytearray.h">
-      <Filter>src</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\libwebvtt\internal.h">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\webvtt\cue.h">

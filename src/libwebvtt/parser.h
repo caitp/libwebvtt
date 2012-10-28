@@ -2,7 +2,6 @@
 #	define __PARSER_H__
 #	include <webvtt/parser.h>
 #	include "bytearray.h"
-#	include "internal.h"
 
 typedef struct webvtt_parser_t *webvtt_parser;
 typedef struct parse_data_t parse_data;
@@ -53,6 +52,15 @@ parse_data_t
 	};
 };
 
+/**
+ * Flags indicating which settings have been read
+ */
+#define READ_VERTICAL (1<<0)
+#define READ_SIZE (1<<1)
+#define READ_POSITION (1<<2)
+#define READ_LINE (1<<3)
+#define READ_ALIGN (1<<4)
+
 struct
 webvtt_parser_t
 {
@@ -65,11 +73,11 @@ webvtt_parser_t
 	void *userdata;
 	webvtt_bool mode;
 	webvtt_bool finish;
-
+	webvtt_uint flags;
 	/**
 	 * Current cue
 	 */
-	cue *cue;
+	webvtt_cue cue;
 
 	/**
 	 * line

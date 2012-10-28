@@ -8,3 +8,4 @@ Makefile text eol=lf
 *.vcxproj.user text eol=crlf
 *.c text eol=lf
 *.h text eol=lf
+test/spec/*/*.test -text

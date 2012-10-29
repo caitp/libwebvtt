@@ -3,8 +3,6 @@
 #	include <webvtt/parser.h>
 #	include "bytearray.h"
 
-typedef struct webvtt_parser_t *webvtt_parser;
-typedef struct parse_data_t parse_data;
 typedef enum webvtt_token_t webvtt_token;
 
 #define  CR (0x0D)
@@ -36,20 +34,6 @@ webvtt_token_t
 	SEPARATOR, /* '-->' */
 	TIMESTAMP,
 	PERCENTAGE
-};
-
-
-
-struct
-parse_data_t
-{
-	webvtt_uint state;
-	union
-	{
-		webvtt_int _int;
-		webvtt_uint _uint;
-		webvtt_timestamp timestamp;
-	};
 };
 
 /**

@@ -16,8 +16,8 @@ Available from https://github.com/caitp/libwebvtt
 		webvtt_uint *, webvtt_uint, webvtt_utf8_reader );
 
 ### Memory allocation routines
-	void *webvtt_alloc( webvtt_length );
-	void *webvtt_alloc0( webvtt_length );
+	void *webvtt_alloc( webvtt_uint );
+	void *webvtt_alloc0( webvtt_uint );
 	void webvtt_free( void * );
 	void webvtt_set_allocator( webvtt_alloc_fn_ptr, webvtt_free_fn_ptr, void * );
 

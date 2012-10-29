@@ -2,7 +2,7 @@
 #include <malloc.h>
 #include <string.h>
 
-static void *default_alloc( void *unused, webvtt_length nb );
+static void *default_alloc( void *unused, webvtt_uint nb );
 static void default_free( void *unused, void *ptr );
 
 struct
@@ -14,7 +14,7 @@ struct
 } allocator = { 0, default_alloc, default_free, 0 };
 
 static void * WEBVTT_CALLBACK
-default_alloc( void *unused, webvtt_length nb )
+default_alloc( void *unused, webvtt_uint nb )
 {
 	return malloc( nb );
 }
@@ -54,7 +54,7 @@ webvtt_set_allocator( webvtt_alloc_fn_ptr alloc, webvtt_free_fn_ptr free, void *
  * public alloc/dealloc functions
  */
 void *
-webvtt_alloc( webvtt_length nb )
+webvtt_alloc( webvtt_uint nb )
 {
 	void *ret = allocator.alloc( allocator.alloc_data, nb );
 	if( ret )
@@ -63,7 +63,7 @@ webvtt_alloc( webvtt_length nb )
 }
 
 void *
-webvtt_alloc0( webvtt_length nb )
+webvtt_alloc0( webvtt_uint nb )
 {
 	void *ret = allocator.alloc( allocator.alloc_data, nb );
 	if( ret )

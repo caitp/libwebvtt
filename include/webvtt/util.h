@@ -71,7 +71,7 @@ typedef webvtt_uint32 webvtt_length;
 /**
  * Memory allocation callbacks, which allow overriding the allocation strategy.
  */
-typedef void * (WEBVTT_CALLBACK *webvtt_alloc_fn_ptr)( void *userdata, webvtt_length nbytes );
+typedef void * (WEBVTT_CALLBACK *webvtt_alloc_fn_ptr)( void *userdata, webvtt_uint nbytes );
 typedef void (WEBVTT_CALLBACK *webvtt_free_fn_ptr)( void *userdata, void *pmem );
 
 /**
@@ -88,8 +88,8 @@ typedef void (WEBVTT_CALLBACK *webvtt_free_fn_ptr)( void *userdata, void *pmem )
  * for allocation, as it is negligible compared to the act of allocating memory itself, and having
  * a configurable allocation strategy could be very useful.
  */
-void *webvtt_alloc( webvtt_length nb );
-void *webvtt_alloc0( webvtt_length nb );
+void *webvtt_alloc( webvtt_uint nb );
+void *webvtt_alloc0( webvtt_uint nb );
 void webvtt_free( void *data );
 void webvtt_set_allocator( webvtt_alloc_fn_ptr alloc, webvtt_free_fn_ptr free, void *userdata );
 

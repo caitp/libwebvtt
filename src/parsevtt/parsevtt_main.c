@@ -56,7 +56,6 @@ int
 main( int argc, char **argv )
 {
 	const char *input_file = 0;
-	int status = 0;
 	webvtt_status result;
 	webvtt_parser vtt;
 	FILE *fh;

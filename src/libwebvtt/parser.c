@@ -95,7 +95,7 @@ finish_cue( webvtt_parser self )
 		{
 			webvtt_cue cue = (webvtt_cue)self->cue;
 			self->cue = 0;
-			self->read( self->userdata, (webvtt_cue)self->cue );
+			self->read( self->userdata, cue );
 		}
 		else
 		{

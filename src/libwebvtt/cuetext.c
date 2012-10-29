@@ -25,43 +25,17 @@ do \
 			return WEBVTT_PARSE_ERROR; \
 } while(0)
 
-static webvtt_status
-tokenize_data( webvtt_parser self, webvtt_uint line, const webvtt_wchar *pch,
-	const webvtt_uint *pos, webvtt_uint len, webvtt_node *pnode )
-{
-	while( *pos < len )
-	{
-		/* Get character */
-		webvtt_uint c = pch[ *pos++ ];
-		switch( c )
-		{
-		case UTF16_AMPERSAND:
-
-			break;
-
-		case UTF16_LESSTHAN:
-
-			break;
-		}
-	}
-}
-
 webvtt_status
 webvtt_parse_cuetext( webvtt_parser self, webvtt_uint line, const webvtt_wchar *pch,
 	const webvtt_uint len, webvtt_node *pnode )
 {
-	webvtt_uint pos = 0;
-
 	if( !pch )
 	{
 		return WEBVTT_INVALID_PARAM;
 	}
-
-	while( pos < len )
-	{
-	}
-
-	return WEBVTT_SUCCESS;
-error:
-	return WEBVTT_PARSE_ERROR;
+	
+	/**
+	 * Routine not implemented yet.
+	 */
+	return WEBVTT_NOT_SUPPORTED;
 }
